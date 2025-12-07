@@ -62,7 +62,6 @@ func part2(ranges [][2]int) int {
 	})
 	var merged [][2]int
 	current := ranges[0]
-
 	for i := 1; i < len(ranges); i++ {
 		next := ranges[i]
 
