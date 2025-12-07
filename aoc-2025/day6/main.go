@@ -17,31 +17,31 @@ func readGrid(file string) ([]string, error) {
 
 	var lines []string
 	scanner := bufio.NewScanner(f)
-	for scanner.Scan() {
-		lines = append(lines, scanner.Text()) // do NOT trim spaces
+	for scanner.Scan() { // Read the grid
+		lines = append(lines, scanner.Text()) // keep spaces
 	}
 	return lines, scanner.Err()
 }
 
-func padLines(lines []string) []string {
+func pad(lines []string) []string {
 	maxLen := 0
-	for _, l := range lines {
+	for _, l := range lines { // find longest line
 		if len(l) > maxLen {
 			maxLen = len(l)
 		}
 	}
-
 	out := make([]string, len(lines))
 	for i, l := range lines {
-		if len(l) < maxLen {
-			l = l + strings.Repeat(" ", maxLen-len(l))
+		diff := maxLen - len(l)
+		if diff > 0 {
+			l += strings.Repeat(" ", diff) // add spaces
 		}
 		out[i] = l
 	}
 	return out
 }
 
-func isSpaceColumn(lines []string, col int) bool {
+func isSpaceColumn(lines []string, col int) bool { // check if a column is only spaces -> seperator column
 	for _, row := range lines {
 		if row[col] != ' ' {
 			return false
@@ -50,64 +50,75 @@ func isSpaceColumn(lines []string, col int) bool {
 	return true
 }
 
-func detectBlocks(lines []string) [][2]int {
-	width := len(lines[0])
+func findBlocks(lines []string) [][2]int {
+	w := len(lines[0])
 	var blocks [][2]int
-	inBlock := false
-	var start int
 
-	for col := 0; col < width; col++ {
-		if isSpaceColumn(lines, col) {
-			if inBlock {
-				blocks = append(blocks, [2]int{start, col - 1})
-				inBlock = false
+	in := false
+	start := 0
+
+	for c := range w {
+		if isSpaceColumn(lines, c) {
+			if in {
+				blocks = append(blocks, [2]int{start, c - 1})
+				in = false
 			}
-		} else {
-			if !inBlock {
-				start = col
-				inBlock = true
-			}
+		} else if !in {
+			in = true
+			start = c
 		}
 	}
-	if inBlock {
-		blocks = append(blocks, [2]int{start, width - 1})
+	if in {
+		blocks = append(blocks, [2]int{start, w - 1})
 	}
+
 	return blocks
 }
 
-func extractNumbers(row string, blocks [][2]int) ([]int, []string) {
-	var exNums []int
-	var exOps []string
-
-	for _, block := range blocks {
-		start, end := block[0], block[1]
-		sub := strings.TrimSpace(row[start : end+1])
-
-		if sub == "" {
-			continue
-		}
-
-		if sub == "+" || sub == "*" {
-			exOps = append(exOps, sub)
-		} else {
-			v, _ := strconv.Atoi(sub)
-			exNums = append(exNums, v)
-		}
-	}
-	return exNums, exOps
-}
-
 func main() {
-	file := "test.txt"
-	grid, _ := readGrid(file)
-	grid = padLines(grid)
-	blocks := detectBlocks(grid)
+	grid, _ := readGrid("input.txt")
+	grid = pad(grid)
+	blocks := findBlocks(grid)
 
-	problems := make([][]int, len(blocks))
-	problemOps := make([][]string, len(blocks))
-	for i, row := range grid {
-		problems[i], problemOps[i] = extractNumbers(row, blocks)
+	numProblems := len(blocks)
+	problems := make([][]int, numProblems)
+	ops := make([]string, numProblems)
+
+	last := len(grid) - 1
+
+	for r, row := range grid {
+		for i, b := range blocks {
+			sub := strings.TrimSpace(row[b[0] : b[1]+1])
+
+			if r == last {
+				ops[i] = sub
+				continue
+			}
+
+			if sub == "" {
+				continue
+			}
+
+			v, _ := strconv.Atoi(sub)
+			problems[i] = append(problems[i], v)
+		}
 	}
-	fmt.Println(problems, problemOps)
 
+	total := 0
+	for i := range problems {
+		vals := problems[i]
+		op := ops[i]
+
+		acc := vals[0]
+		for _, v := range vals[1:] {
+			if op == "+" {
+				acc += v
+			} else {
+				acc *= v
+			}
+		}
+		total += acc
+	}
+
+	fmt.Println("TOTAL =", total)
 }
