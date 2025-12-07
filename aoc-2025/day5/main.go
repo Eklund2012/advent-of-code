@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"sort"
 	"strconv"
 	"strings"
 )
@@ -22,7 +23,7 @@ func part1(file string) ([][2]int, []int) {
 	readingRanges := true
 	for scanner.Scan() {
 		line := strings.TrimSpace(scanner.Text())
-		if line == "" { // means we start reading IDs
+		if line == "" { // means start reading IDs
 			readingRanges = false
 			continue
 		}
@@ -55,11 +56,39 @@ func checkInRange(nums []int, ranges [][2]int) int {
 	return fresh
 }
 
+func part2(ranges [][2]int) int {
+	sort.Slice(ranges, func(i, j int) bool {
+		return ranges[i][0] < ranges[j][0]
+	})
+	var merged [][2]int
+	current := ranges[0]
+
+	for i := 1; i < len(ranges); i++ {
+		next := ranges[i]
+
+		if next[0] <= current[1]+1 {
+			if next[1] > current[1] {
+				current[1] = next[1]
+			}
+		} else {
+			merged = append(merged, current)
+			current = next
+		}
+	}
+	merged = append(merged, current)
+	total := 0
+	for _, r := range merged {
+		total += r[1] - r[0] + 1
+	}
+	return total
+}
+
 func main() {
 	file := "input.txt"
 
 	ranges, nums := part1(file)
 	fresh := checkInRange(nums, ranges)
 	fmt.Printf("%d Are fresh (part1)\n", fresh)
-
+	numFreshIDs := part2(ranges)
+	fmt.Printf("%d ingredient IDs are considered fresh (part2)", numFreshIDs)
 }
